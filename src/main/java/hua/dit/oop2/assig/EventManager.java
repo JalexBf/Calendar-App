@@ -2,6 +2,7 @@ package hua.dit.oop2.assig;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
@@ -19,6 +20,23 @@ public class EventManager {
         this.events.add(event);
     }
 
+    // Delete an event from the collection
+    public boolean deleteEvent(String title) {
+        return events.removeIf(event -> event.getTitle().equalsIgnoreCase(title));
+    }
+
+
+    // Method to find an event by its title
+    public Event findEventByTitle(String title) {
+        for (Event event : events) {
+            if (event.getTitle().equals(title)) {
+                return event;
+            }
+        }
+        return null; // Return null if event not found
+    }
+
+
     // Edit event in the collection
     public void editEvent(String title, Event newEventDetails) {
         // Find event by title or another unique identifier
@@ -31,10 +49,6 @@ public class EventManager {
         }
     }
 
-    // Delete an event from the collection
-    public void deleteEvent(String title) {
-        events.removeIf(event -> event.getTitle().equals(title));
-    }
 
     // List all events
     public List<Event> getAllEvents() {
@@ -46,15 +60,17 @@ public class EventManager {
         return events.stream().filter(condition).collect(Collectors.toList());
     }
 
-    // Method to find an event by its title
-    public Event findEventByTitle(String title) {
-        for (Event event : events) {
-            if (event.getTitle().equals(title)) {
-                return event;
+
+    // Helper method
+    private int findEventIndexByTitle(String title) {
+        for (int i = 0; i < events.size(); i++) {
+            if (events.get(i).getTitle().equalsIgnoreCase(title)) {
+                return i;
             }
         }
-        return null; // Return null if event not found
+        return -1;
     }
+
 
     public List<Event> getEventsForDay(LocalDate date) {
         return events.stream()
@@ -77,6 +93,32 @@ public class EventManager {
 
         return events.stream()
                 .filter(event -> event.getDate().getMonthValue() == month && event.getDate().getYear() == year)
+                .collect(Collectors.toList());
+    }
+
+    public List<Event> getEventsForPeriod(LocalDate startDate, LocalDate endDate) {
+        return events.stream()
+                .filter(event -> !event.getDate().isBefore(startDate) && !event.getDate().isAfter(endDate))
+                .collect(Collectors.toList());
+    }
+
+
+    public List<Event> getPendingTasks() {
+        LocalDateTime now = LocalDateTime.now();
+        return events.stream()
+                .filter(event -> event instanceof Task)
+                .map(event -> (Task) event)
+                .filter(task -> !task.isCompleted() && now.isBefore(task.getDeadline()))
+                .collect(Collectors.toList());
+    }
+
+
+    public List<Event> getPastDueTasks() {
+        LocalDateTime now = LocalDateTime.now();
+        return events.stream()
+                .filter(event -> event instanceof Task)
+                .map(event -> (Task) event)
+                .filter(task -> !task.isCompleted() && now.isAfter(task.getDeadline()))
                 .collect(Collectors.toList());
     }
 }

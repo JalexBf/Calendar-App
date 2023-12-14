@@ -28,4 +28,8 @@ public class Task extends Event{
     public void setCompleted(boolean completed) {
         isCompleted = completed;
     }
+
+    public boolean isPastDue() {
+        return LocalDateTime.now().isAfter(deadline) && !isCompleted;
+    }
 }
