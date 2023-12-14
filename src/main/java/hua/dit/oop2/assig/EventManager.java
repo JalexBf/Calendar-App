@@ -1,5 +1,7 @@
 package hua.dit.oop2.assig;
 
+import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
@@ -52,5 +54,29 @@ public class EventManager {
             }
         }
         return null; // Return null if event not found
+    }
+
+    public List<Event> getEventsForDay(LocalDate date) {
+        return events.stream()
+                .filter(event -> event.getDate().equals(date))
+                .collect(Collectors.toList());
+    }
+
+    public List<Event> getEventsForWeek(LocalDate date) {
+        LocalDate startOfWeek = date.with(DayOfWeek.MONDAY);
+        LocalDate endOfWeek = date.with(DayOfWeek.SUNDAY);
+
+        return events.stream()
+                .filter(event -> !event.getDate().isBefore(startOfWeek) && !event.getDate().isAfter(endOfWeek))
+                .collect(Collectors.toList());
+    }
+
+    public List<Event> getEventsForMonth(LocalDate date) {
+        int month = date.getMonthValue();
+        int year = date.getYear();
+
+        return events.stream()
+                .filter(event -> event.getDate().getMonthValue() == month && event.getDate().getYear() == year)
+                .collect(Collectors.toList());
     }
 }
