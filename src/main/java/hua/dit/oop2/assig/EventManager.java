@@ -72,30 +72,6 @@ public class EventManager {
     }
 
 
-    public List<Event> getEventsForDay(LocalDate date) {
-        return events.stream()
-                .filter(event -> event.getDate().equals(date))
-                .collect(Collectors.toList());
-    }
-
-    public List<Event> getEventsForWeek(LocalDate date) {
-        LocalDate startOfWeek = date.with(DayOfWeek.MONDAY);
-        LocalDate endOfWeek = date.with(DayOfWeek.SUNDAY);
-
-        return events.stream()
-                .filter(event -> !event.getDate().isBefore(startOfWeek) && !event.getDate().isAfter(endOfWeek))
-                .collect(Collectors.toList());
-    }
-
-    public List<Event> getEventsForMonth(LocalDate date) {
-        int month = date.getMonthValue();
-        int year = date.getYear();
-
-        return events.stream()
-                .filter(event -> event.getDate().getMonthValue() == month && event.getDate().getYear() == year)
-                .collect(Collectors.toList());
-    }
-
     public List<Event> getEventsForPeriod(LocalDate startDate, LocalDate endDate) {
         return events.stream()
                 .filter(event -> !event.getDate().isBefore(startDate) && !event.getDate().isAfter(endDate))
@@ -107,8 +83,8 @@ public class EventManager {
         LocalDateTime now = LocalDateTime.now();
         return events.stream()
                 .filter(event -> event instanceof Task)
-                .map(event -> (Task) event)
-                .filter(task -> !task.isCompleted() && now.isBefore(task.getDeadline()))
+                .map(Task.class::cast)
+                .filter(task -> !task.isCompleted() && task.getDeadline().isAfter(now))
                 .collect(Collectors.toList());
     }
 
@@ -117,8 +93,8 @@ public class EventManager {
         LocalDateTime now = LocalDateTime.now();
         return events.stream()
                 .filter(event -> event instanceof Task)
-                .map(event -> (Task) event)
-                .filter(task -> !task.isCompleted() && now.isAfter(task.getDeadline()))
+                .map(Task.class::cast)
+                .filter(task -> !task.isCompleted() && task.getDeadline().isBefore(now))
                 .collect(Collectors.toList());
     }
 }

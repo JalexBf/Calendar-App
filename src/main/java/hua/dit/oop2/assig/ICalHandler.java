@@ -9,6 +9,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
@@ -20,46 +21,43 @@ public class ICalHandler {
         List<Event> events = new ArrayList<>();
         try {
             List<String> lines = Files.readAllLines(Paths.get(filePath));
-            String title = "", description = "";
+            StringBuilder descriptionBuilder = new StringBuilder();
+            String title = "Default Title"; // Default title or another logic
             LocalDate date = null;
             LocalTime startTime = null;
             Duration duration = null;
-            LocalDateTime startDateTime = null; // For calculating duration
+            LocalDateTime startDateTime = null;
+            boolean isAllDay = false;
 
             for (String line : lines) {
                 if (line.startsWith("BEGIN:VEVENT")) {
-                    title = "";
-                    description = "";
-                    date = null;
-                    startTime = null;
-                    duration = null;
-                    startDateTime = null;
+                    descriptionBuilder.setLength(0); // Reset the description builder
+                    title = "Default Title"; // Reset title for each event
+                    // ... other initializations
                 } else if (line.startsWith("END:VEVENT")) {
-                    if (startTime != null) {
-                        // Create an appointment if start time is present
-                        Appointment appointment = new Appointment(title, description, date, startTime, duration);
-                        events.add(appointment);
-                        System.out.println("Added Event: " + title + ", Date: " + date + (startTime != null ? ", StartTime: " + startTime : "") + (duration != null ? ", Duration: " + duration : ""));
+                    String description = descriptionBuilder.toString();
+                    Event event;
+                    if (isAllDay) {
+                        event = new AllDayEvent(title, description, date);
                     } else {
-                        // Create a task otherwise
-                        Task task = new Task(title, description, date, null);
-                        events.add(task);
-                        System.out.println("Added Event: " + title + ", Date: " + date);
+                        event = new Appointment(title, description, date, startTime, duration);
                     }
-                } else if (line.startsWith("SUMMARY:")) {
-                    title = line.substring(8);
-                } else if (line.startsWith("DESCRIPTION:")) {
-                    description = line.substring(13);
+                    events.add(event);
+
+            } else if (line.startsWith("DESCRIPTION:")) {
+                    descriptionBuilder.append(line.substring(12));
+                } else if (line.startsWith(" ") || line.startsWith("\t")) { // Continuation of description
+                    descriptionBuilder.append(line.trim());
+                } else if (line.startsWith("DTSTART;VALUE=DATE:")) {
+                    String dateString = line.substring(19);
+                    date = LocalDate.parse(dateString, DateTimeFormatter.BASIC_ISO_DATE);
+                    isAllDay = true;
                 } else if (line.startsWith("DTSTART:")) {
                     String dateTimeString = line.substring(8);
-                    if (dateTimeString.contains("T")) {
-                        startDateTime = parseDateTime(dateTimeString);
-                        date = startDateTime.toLocalDate();
-                        startTime = startDateTime.toLocalTime();
-                    } else {
-                        date = LocalDate.parse(dateTimeString, DateTimeFormatter.ofPattern("yyyyMMdd"));
-                    }
-                } else if (line.startsWith("DTEND:")) {
+                    startDateTime = parseDateTime(dateTimeString);
+                    date = startDateTime.toLocalDate();
+                    startTime = startDateTime.toLocalTime();
+                } else if (line.startsWith("DTEND:") && !isAllDay) {
                     String dateTimeString = line.substring(6);
                     if (dateTimeString.contains("T") && startDateTime != null) {
                         LocalDateTime endDateTime = parseDateTime(dateTimeString);
@@ -81,8 +79,17 @@ public class ICalHandler {
             writer.write("PRODID:-//Your Company//Your Product//EN\n");
 
             for (Event event : events) {
-                String icalEvent = eventToICalFormat(event);
-                writer.write(icalEvent);
+                if (event instanceof AllDayEvent) {
+                    AllDayEvent allDayEvent = (AllDayEvent) event;
+                    writer.write("BEGIN:VEVENT\n");
+                    writer.write("SUMMARY:" + allDayEvent.getTitle() + "\n");
+                    writer.write("DTSTART;VALUE=DATE:" + allDayEvent.getDate().format(DateTimeFormatter.BASIC_ISO_DATE) + "\n");
+                    writer.write("DTEND;VALUE=DATE:" + allDayEvent.getDate().plusDays(1).format(DateTimeFormatter.BASIC_ISO_DATE) + "\n");
+                    writer.write("END:VEVENT\n");
+                } else {
+                    String icalEvent = eventToICalFormat(event);
+                    writer.write(icalEvent);
+                }
             }
 
             writer.write("END:VCALENDAR\n");
@@ -90,55 +97,6 @@ public class ICalHandler {
             System.out.println("An error occurred while writing to the iCal file: " + e.getMessage());
         }
     }
-
-
-    public void updateCalendar(String icalFilePath, EventManager manager) {
-        List<Event> events = readFromICalFile(icalFilePath); // Read existing events
-        Scanner scanner = new Scanner(System.in);
-        boolean moreEvents = true;
-
-        while (moreEvents) {
-            System.out.println("Adding a new event.");
-
-            System.out.print("Enter event type (appointment/task): ");
-            String eventType = scanner.nextLine().toLowerCase();
-
-            System.out.print("Enter title: ");
-            String title = scanner.nextLine();
-
-            System.out.print("Enter description: ");
-            String description = scanner.nextLine();
-
-            System.out.print("Enter date (YYYY-MM-DD): ");
-            LocalDate date = LocalDate.parse(scanner.nextLine());
-
-            Event event;
-            if ("appointment".equals(eventType)) {
-                System.out.print("Enter start time (HH:MM): ");
-                LocalTime startTime = LocalTime.parse(scanner.nextLine());
-
-                System.out.print("Enter duration in minutes: ");
-                long durationMinutes = scanner.nextLong();
-                scanner.nextLine(); // consume newline
-
-                event = new Appointment(title, description, date, startTime, Duration.ofMinutes(durationMinutes));
-            } else { // assuming task
-                System.out.print("Enter deadline (YYYY-MM-DDTHH:MM): ");
-                LocalDateTime deadline = LocalDateTime.parse(scanner.nextLine());
-                event = new Task(title, description, date, deadline);
-            }
-
-            events.add(event);
-
-            System.out.print("Do you want to add another event? (yes/no): ");
-            String response = scanner.nextLine();
-            moreEvents = "yes".equalsIgnoreCase(response);
-        }
-
-        writeToICalFile(icalFilePath, events); // Save new list of events back to the file
-        System.out.println("Calendar updated successfully.");
-    }
-
 
     public String eventToICalFormat(Event event) {
         StringBuilder builder = new StringBuilder();
@@ -148,14 +106,12 @@ public class ICalHandler {
         builder.append("DESCRIPTION:").append(event.getDescription()).append("\n");
         builder.append("DTSTART:").append(convertToICalDateTimeFormat(event.getDate())).append("\n");
 
-        // Handle end time or duration for Appointment
         if (event instanceof Appointment) {
             Appointment appointment = (Appointment) event;
             LocalDateTime endDateTime = LocalDateTime.of(appointment.getDate(), appointment.getStartTime()).plus(appointment.getDuration());
             builder.append("DTEND:").append(convertToICalDateTimeFormat(endDateTime.toLocalDate())).append("\n");
         }
 
-        // Handle deadline for Task
         if (event instanceof Task) {
             Task task = (Task) event;
             builder.append("DUE:").append(convertToICalDateTimeFormat(task.getDeadline().toLocalDate())).append("\n");
@@ -165,20 +121,23 @@ public class ICalHandler {
         return builder.toString();
     }
 
-
     public String convertToICalDateTimeFormat(LocalDate date) {
         return DateTimeFormatter.ofPattern("yyyyMMdd").format(date) + "T" + DateTimeFormatter.ofPattern("HHmmss").format(LocalTime.MIDNIGHT) + "Z";
     }
 
     private LocalDateTime parseDateTime(String dateTimeString) {
         try {
-            return LocalDateTime.parse(dateTimeString, DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss"));
+            DateTimeFormatter formatter = new DateTimeFormatterBuilder()
+                    .appendPattern("yyyyMMdd'T'HHmmss")
+                    .optionalStart()
+                    .appendLiteral('Z')
+                    .optionalEnd()
+                    .toFormatter();
+
+            return LocalDateTime.parse(dateTimeString, formatter);
         } catch (DateTimeParseException e) {
-            // Handle alternative date formats or throw an exception
             System.out.println("Failed to parse date-time: " + dateTimeString);
             throw e;
         }
     }
-
-
 }
