@@ -6,73 +6,42 @@ import java.time.format.DateTimeParseException;
 import java.time.temporal.TemporalAdjusters;
 import java.util.List;
 import java.util.Scanner;
+import gr.hua.dit.oop2.calendar.TimeService;
+import gr.hua.dit.oop2.calendar.TimeTeller;
+import hua.dit.oop2.assig.core.*;
 
 public class EventHandler {
 
     private EventManager eventManager;
+    private Scanner scanner;
+    private static final TimeTeller teller = TimeService.getTeller();
 
     public EventHandler(EventManager eventManager) {
         this.eventManager = eventManager;
+        this.scanner = new Scanner(System.in);
     }
 
     public void addEventsFromUserInput() {
-        Scanner scanner = new Scanner(System.in);
         boolean moreEvents = true;
 
         while (moreEvents) {
-
             System.out.println("Enter event type (appointment/task/event):");
             String type = scanner.nextLine().toLowerCase();
 
-            String title, description;
-            LocalDate date;
-            LocalTime startTime = null;
-            Duration duration = null;
-            boolean isAllDay = false;
-
-            System.out.println("Enter title:");
-            title = scanner.nextLine().trim();
-
-            System.out.println("Enter description:");
-            description = scanner.nextLine().trim();
-
-            date = null;
-            while (date == null) {
-                System.out.println("Enter date (DD-MM-YYYY):");
-                try {
-                    date = LocalDate.parse(scanner.nextLine().trim(), DateTimeFormatter.ofPattern("dd-MM-yyyy"));
-                } catch (DateTimeParseException e) {
-                    System.out.println("Invalid date format. Please try again.");
-                }
-            }
-
-            if (type.equals("event")) {
-                System.out.println("Is this an all-day event? (yes/no):");
-                isAllDay = scanner.nextLine().trim().equalsIgnoreCase("yes");
-            }
-
-            if ((type.equals("appointment") || (type.equals("event") && !isAllDay)) && startTime == null) {
-                while (startTime == null) {
-                    System.out.println("Enter start time (HH:mm):");
-                    try {
-                        startTime = LocalTime.parse(scanner.nextLine().trim(), DateTimeFormatter.ofPattern("HH:mm"));
-                    } catch (DateTimeParseException e) {
-                        System.out.println("Invalid time format. Please try again.");
-                    }
-                }
-
-                System.out.println("Enter duration in minutes:");
-                duration = Duration.ofMinutes(scanner.nextInt());
-                scanner.nextLine(); // consume the remaining newline
-            }
-
             Event event = null;
-            if (type.equals("event") && isAllDay) {
-                event = new AllDayEvent(title, description, date);
-            } else if (type.equals("appointment") || (type.equals("event") && !isAllDay)) {
-                event = new Appointment(title, description, date, startTime, duration);
-            } else if (type.equals("task")) {
-                // Add your existing logic for creating a Task object here
+            switch (type) {
+                case "appointment":
+                    event = createAppointmentFromUserInput();
+                    break;
+                case "task":
+                    event = createTaskFromUserInput();
+                    break;
+                case "event":
+                    event = createEventFromUserInput();
+                    break;
+                default:
+                    System.out.println("Invalid event type. Please enter 'appointment', 'task', or 'event'.");
+                    continue;
             }
 
             if (event != null) {
@@ -84,37 +53,95 @@ public class EventHandler {
         }
     }
 
+    private Appointment createAppointmentFromUserInput() {
+        System.out.println("Enter title:");
+        String title = scanner.nextLine();
 
+        System.out.println("Enter description:");
+        String description = scanner.nextLine();
 
+        LocalDate date = readDateFromUser("Enter date (DD-MM-YYYY):");
+        LocalTime startTime = readTimeFromUser("Enter start time (HH:mm):");
 
+        System.out.println("Enter duration in minutes:");
+        int durationMinutes = Integer.parseInt(scanner.nextLine());
+        Duration duration = Duration.ofMinutes(durationMinutes);
 
-    private LocalDate parseDate(String dateString) {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
-        return LocalDate.parse(dateString, formatter);
+        return new Appointment(title, description, date, startTime, duration);
     }
 
-    private LocalTime parseTime(String timeString) {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm");
-        return LocalTime.parse(timeString, formatter);
-    }
+    private Event createEventFromUserInput() {
+        System.out.println("Enter title:");
+        String title = scanner.nextLine();
 
-    private LocalDateTime parseDateTime(String dateTimeString) {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
-        return LocalDateTime.parse(dateTimeString, formatter);
-    }
+        System.out.println("Enter description:");
+        String description = scanner.nextLine();
 
+        LocalDate date = readDateFromUser("Enter date (DD-MM-YYYY):");
 
+        System.out.println("Is this an all-day event? (yes/no):");
+        boolean isAllDay = scanner.nextLine().trim().equalsIgnoreCase("yes");
 
-    private void addEvent(String type, String title, String description, LocalDate date, LocalTime startTime, int durationMinutes, LocalDateTime deadline) {
-        if ("appointment".equals(type)) {
-            Appointment appointment = new Appointment(title, description, date, startTime, Duration.ofMinutes(durationMinutes));
-            eventManager.addEvent(appointment);
-        } else if ("task".equals(type)) {
-            Task task = new Task(title, description, date, deadline);
-            eventManager.addEvent(task);
+        if (isAllDay) {
+            return new AllDayEvent(title, description, date);
+        } else {
+            System.out.println("Does this event have a specific start time? (yes/no):");
+            boolean hasStartTime = scanner.nextLine().trim().equalsIgnoreCase("yes");
+            if (hasStartTime) {
+                LocalTime startTime = readTimeFromUser("Enter start time (HH:mm):");
+                return new Event(title, description, date, startTime);
+            } else {
+                return new Event(title, description, date); // No specific time
+            }
         }
     }
 
+    private Task createTaskFromUserInput() {
+        System.out.println("Enter title:");
+        String title = scanner.nextLine();
+
+        System.out.println("Enter description:");
+        String description = scanner.nextLine();
+
+        LocalDate date = readDateFromUser("Enter date (DD-MM-YYYY):");
+
+        LocalDateTime deadline = readDateTimeFromUser("Enter deadline date and time (DD-MM-YYYY HH:mm):");
+
+        return new Task(title, description, date, deadline);
+    }
+
+    private LocalDate readDateFromUser(String message) {
+        while (true) {
+            System.out.println(message);
+            try {
+                return LocalDate.parse(scanner.nextLine(), DateTimeFormatter.ofPattern("dd-MM-yyyy"));
+            } catch (DateTimeParseException e) {
+                System.out.println("Invalid date format. Please try again.");
+            }
+        }
+    }
+
+    private LocalTime readTimeFromUser(String message) {
+        while (true) {
+            System.out.println(message);
+            try {
+                return LocalTime.parse(scanner.nextLine(), DateTimeFormatter.ofPattern("HH:mm"));
+            } catch (DateTimeParseException e) {
+                System.out.println("Invalid time format. Please try again.");
+            }
+        }
+    }
+
+    private LocalDateTime readDateTimeFromUser(String message) {
+        while (true) {
+            System.out.println(message);
+            try {
+                return LocalDateTime.parse(scanner.nextLine(), DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm"));
+            } catch (DateTimeParseException e) {
+                System.out.println("Invalid date and time format. Please try again.");
+            }
+        }
+    }
 
     public void viewEvents(String periodType, LocalDate date) {
         LocalDate startDate, endDate;
@@ -140,7 +167,6 @@ public class EventHandler {
         displayEvents(events);
     }
 
-
     public void viewPendingTasks() {
         List<Event> pendingTasks = eventManager.getPendingTasks();
         displayEvents(pendingTasks);
@@ -150,7 +176,6 @@ public class EventHandler {
         List<Event> pastDueTasks = eventManager.getPastDueTasks();
         displayEvents(pastDueTasks);
     }
-
 
     private void displayEvents(List<Event> events) {
         if (events.isEmpty()) {
@@ -162,11 +187,14 @@ public class EventHandler {
         }
     }
 
-
     private void displayEventDetails(Event event) {
-        System.out.println("Title: " + event.getTitle());
-        System.out.println("Description: " + event.getDescription());
+        String title = event.getTitle().isEmpty() ? "No title" : event.getTitle();
+        String description = event.getDescription().isEmpty() ? "No description" : event.getDescription();
+
+        System.out.println("Title: " + title);
+        System.out.println("Description: " + description);
         System.out.println("Date: " + event.getDate());
+
         if (event instanceof Appointment) {
             Appointment appointment = (Appointment) event;
             System.out.println("Start Time: " + appointment.getStartTime());
@@ -178,41 +206,12 @@ public class EventHandler {
         }
     }
 
-
     private String formatDuration(Duration duration) {
+        if (duration == null) {
+            return "Duration not specified";
+        }
         long hours = duration.toHours();
         long minutes = duration.toMinutes() % 60;
         return String.format("%d hours and %d minutes", hours, minutes);
     }
-
-
-    public void listAllEvents() {
-        List<Event> allEvents = eventManager.getAllEvents();
-        if (allEvents.isEmpty()) {
-            System.out.println("No events to display.");
-            return;
-        }
-        for (Event event : allEvents) {
-            displayEventDetails(event);
-        }
-    }
-
-    public void editEvent(String titleToEdit, String newType, String newTitle, String newDescription, LocalDate newDate, LocalTime newStartTime, int newDurationMinutes, LocalDateTime newDeadline) {
-        Event event = eventManager.findEventByTitle(titleToEdit);
-        if (event != null) {
-            eventManager.deleteEvent(titleToEdit); // Remove the old event
-            addEvent(newType, newTitle, newDescription, newDate, newStartTime, newDurationMinutes, newDeadline); // Add the updated event
-        }
-    }
-
-    public void deleteEvent(String title) {
-        Event event = eventManager.findEventByTitle(title);
-        if (event != null) {
-            eventManager.deleteEvent(title);
-            System.out.println("Event deleted successfully.");
-        } else {
-            System.out.println("Event not found.");
-        }
-    }
-
 }

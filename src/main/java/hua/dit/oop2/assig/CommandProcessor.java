@@ -1,19 +1,25 @@
 package hua.dit.oop2.assig;
 
+import gr.hua.dit.oop2.calendar.TimeService;
+import gr.hua.dit.oop2.calendar.TimeTeller;
+import hua.dit.oop2.assig.core.Event;
+import hua.dit.oop2.assig.core.EventManager;
+
 import java.time.LocalDate;
 import java.util.List;
-
 
 public class CommandProcessor {
 
     private EventManager manager;
     private ICalHandler fileHandler;
     private EventHandler eventHandler;
+    private TimeTeller teller;
 
     public CommandProcessor(EventManager manager, ICalHandler fileHandler) {
         this.manager = manager;
         this.fileHandler = fileHandler;
         this.eventHandler = new EventHandler(manager);
+        this.teller = TimeService.getTeller(); // Initialize TimeTeller from custom library
     }
 
     public void process(String[] args) {
@@ -23,7 +29,7 @@ public class CommandProcessor {
         }
 
         String command = args[0].toLowerCase();
-        LocalDate currentDate = LocalDate.now();
+        LocalDate currentDate = teller.now().toLocalDate(); // Get current date using custom library
 
         if (args.length == 2) {
             String icalFilePath = args[1];
@@ -69,13 +75,10 @@ public class CommandProcessor {
         }
     }
 
-
     private void updateCalendar(String icalFilePath) {
-
         eventHandler.addEventsFromUserInput();
         List<Event> updatedEvents = manager.getAllEvents();
         fileHandler.writeToICalFile(icalFilePath, updatedEvents);
         System.out.println("Calendar updated successfully with new events.");
     }
 }
-
