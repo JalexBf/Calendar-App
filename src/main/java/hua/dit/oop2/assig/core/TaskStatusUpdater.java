@@ -1,4 +1,4 @@
-package hua.dit.oop2.assig;
+package hua.dit.oop2.assig.core;
 
 import gr.hua.dit.oop2.calendar.TimeListener;
 import gr.hua.dit.oop2.calendar.TimeEvent;

@@ -1,4 +1,4 @@
-package hua.dit.oop2.assig;
+package hua.dit.oop2.assig.handlers;
 
 import gr.hua.dit.oop2.calendar.TimeService;
 import gr.hua.dit.oop2.calendar.TimeTeller;

@@ -1,4 +1,4 @@
-package hua.dit.oop2.assig;
+package hua.dit.oop2.assig.handlers;
 
 import java.io.FileWriter;
 import java.io.IOException;
