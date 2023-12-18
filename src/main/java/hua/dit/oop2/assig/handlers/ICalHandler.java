@@ -8,12 +8,14 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 import gr.hua.dit.oop2.calendar.TimeService;
 import gr.hua.dit.oop2.calendar.TimeTeller;
 import hua.dit.oop2.assig.core.AllDayEvent;
 import hua.dit.oop2.assig.core.Event;
+import hua.dit.oop2.assig.core.Task;
 
 public class ICalHandler {
 
@@ -29,15 +31,17 @@ public class ICalHandler {
             LocalTime startTime = null;
             boolean isAllDay = false;
             boolean isReadingDescription = false;
+            LocalDate dueDate = null; // For VTODO items
 
             for (String line : lines) {
-                if (line.startsWith("BEGIN:VEVENT")) {
+                if (line.startsWith("BEGIN:VEVENT") || line.startsWith("BEGIN:VTODO")) {
                     descriptionBuilder.setLength(0);
                     title = "";
                     date = null;
                     startTime = null;
                     isAllDay = false;
                     isReadingDescription = false;
+                    dueDate = null;
                 } else if (line.startsWith("END:VEVENT")) {
                     String description = descriptionBuilder.toString();
                     if (isAllDay) {
@@ -45,8 +49,13 @@ public class ICalHandler {
                     } else {
                         events.add(new Event(title, description, date, startTime));
                     }
+                } else if (line.startsWith("END:VTODO")) {
+                    String description = descriptionBuilder.toString();
+                    LocalDateTime deadline = (dueDate != null) ? dueDate.atStartOfDay() : null;
+                    Task task = new Task(title, description, deadline);
+                    events.add(task);
                 } else if (line.startsWith("SUMMARY:")) {
-                    title = line.substring(8).trim();
+                    title = parseSummaryLine(line);
                 } else if (line.startsWith("DESCRIPTION:")) {
                     descriptionBuilder = new StringBuilder(line.substring(12).trim());
                     isReadingDescription = true;
@@ -56,10 +65,19 @@ public class ICalHandler {
                     date = LocalDate.parse(line.substring(19), DateTimeFormatter.BASIC_ISO_DATE);
                     isAllDay = true;
                 } else if (line.startsWith("DTSTART:")) {
-                    String dateTimeString = line.substring(8);
-                    LocalDateTime dateTime = LocalDateTime.parse(dateTimeString, DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'"));
+                    LocalDateTime dateTime = LocalDateTime.parse(line.substring(8), DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'"));
                     date = dateTime.toLocalDate();
                     startTime = dateTime.toLocalTime();
+                } else if (line.startsWith("DUE;VALUE=DATE:")) {
+                    try {
+                        int colonIndex = line.indexOf(':');
+                        if (colonIndex != -1) {
+                            String dueDateString = line.substring(colonIndex + 1);
+                            dueDate = LocalDate.parse(dueDateString, DateTimeFormatter.BASIC_ISO_DATE);
+                        }
+                    } catch (DateTimeParseException e) {
+                        System.out.println("Failed to parse DUE date: " + e.getMessage());
+                    }
                 } else if (startsWithKnownProperty(line)) {
                     isReadingDescription = false;
                 }
@@ -71,8 +89,16 @@ public class ICalHandler {
         return events;
     }
 
+    private String parseSummaryLine(String line) {
+        int colonIndex = line.indexOf(':');
+        if (colonIndex != -1 && colonIndex < line.length() - 1) {
+            return line.substring(colonIndex + 1).trim();
+        }
+        return "No title";
+    }
+
     private boolean startsWithKnownProperty(String line) {
-        String[] knownProperties = {"DTSTART;", "DTSTART:", "DTEND;", "DTEND:", "UID:", "CLASS:", "CREATED:", "URL:", "LOCATION:", "SUMMARY:", "DESCRIPTION:"};
+        String[] knownProperties = {"DTSTART;", "DTSTART:", "DTEND;", "DTEND:", "UID:", "CLASS:", "CREATED:", "URL:", "LOCATION:", "SUMMARY:", "DESCRIPTION:", "DUE;"};
         for (String prop : knownProperties) {
             if (line.startsWith(prop)) {
                 return true;
@@ -80,6 +106,7 @@ public class ICalHandler {
         }
         return false;
     }
+
 
     public void writeToICalFile(String filePath, List<Event> newEvents) {
         List<Event> existingEvents = readFromICalFile(filePath);

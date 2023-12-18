@@ -23,6 +23,7 @@ public class Appointment extends Event {
         this.duration = duration;
     }
 
+
     public boolean isHappeningNow() {
         LocalDate currentDate = teller.now().toLocalDate();
         LocalTime currentTime = teller.now().toLocalTime();

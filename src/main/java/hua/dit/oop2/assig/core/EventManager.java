@@ -9,6 +9,7 @@ import gr.hua.dit.oop2.calendar.TimeService;
 import gr.hua.dit.oop2.calendar.TimeTeller;
 
 public class EventManager {
+    private static EventManager instance = null;
     private List<Event> events;
     private static final TimeTeller teller = TimeService.getTeller();
 
@@ -16,17 +17,22 @@ public class EventManager {
         this.events = new ArrayList<>();
     }
 
+    // Public static method to get the instance
+    public static EventManager getInstance() {
+        if (instance == null) {
+            instance = new EventManager();
+        }
+        return instance;
+    }
+
+
     // Add event to the collection
     public void addEvent(Event event) {
         this.events.add(event);
     }
 
-    // Delete an event from the collection
-    public boolean deleteEvent(String title) {
-        return events.removeIf(event -> event.getTitle().equalsIgnoreCase(title));
-    }
 
-    // Method to find an event by its title
+    // Method to find an event by ttitle
     public Event findEventByTitle(String title) {
         for (Event event : events) {
             if (event.getTitle().equals(title)) {
@@ -47,6 +53,7 @@ public class EventManager {
         }
     }
 
+
     // List all events
     public List<Event> getAllEvents() {
         return new ArrayList<>(events); // Return a copy of the events list
@@ -57,11 +64,13 @@ public class EventManager {
         return events.stream().filter(condition).collect(Collectors.toList());
     }
 
+
     public List<Event> getEventsForPeriod(LocalDate startDate, LocalDate endDate) {
         return events.stream()
                 .filter(event -> !event.getDate().isBefore(startDate) && !event.getDate().isAfter(endDate))
                 .collect(Collectors.toList());
     }
+
 
     public List<Event> getPendingTasks() {
         LocalDate now = teller.now().toLocalDate();
@@ -80,6 +89,7 @@ public class EventManager {
                 .filter(task -> !task.isCompleted() && task.getDeadline().toLocalDate().isBefore(now))
                 .collect(Collectors.toList());
     }
+
 
 
     // Method to get a list of all tasks

@@ -2,9 +2,6 @@ package hua.dit.oop2.assig.core;
 
 import gr.hua.dit.oop2.calendar.TimeListener;
 import gr.hua.dit.oop2.calendar.TimeEvent;
-import hua.dit.oop2.assig.core.EventManager;
-import hua.dit.oop2.assig.core.Task;
-
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -29,7 +26,8 @@ public class TaskStatusUpdater implements TimeListener {
         // Iterate through tasks and update their status based on the current time
         for (Task task : tasks) {
             if (!task.isCompleted() && task.getDeadline().isBefore(currentTime)) {
-                task.setCompleted(true); // Mark task as completed if the deadline has passed
+                // Instead of setting the task as completed, flag it as overdue
+                task.setOverdue(true); // You might need to add this method and variable in the Task class
             }
         }
     }

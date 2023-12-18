@@ -16,10 +16,11 @@ public class EventHandler {
     private Scanner scanner;
     private static final TimeTeller teller = TimeService.getTeller();
 
-    public EventHandler(EventManager eventManager) {
-        this.eventManager = eventManager;
+    public EventHandler() {
+        this.eventManager = EventManager.getInstance(); // Use singleton instance
         this.scanner = new Scanner(System.in);
     }
+
 
     public void addEventsFromUserInput() {
         boolean moreEvents = true;
@@ -103,12 +104,16 @@ public class EventHandler {
         System.out.println("Enter description:");
         String description = scanner.nextLine();
 
-        LocalDate date = readDateFromUser("Enter date (DD-MM-YYYY):");
-
         LocalDateTime deadline = readDateTimeFromUser("Enter deadline date and time (DD-MM-YYYY HH:mm):");
+        System.out.println("Is the task completed? (yes/no):");
+        boolean isCompleted = scanner.nextLine().trim().equalsIgnoreCase("yes");
 
-        return new Task(title, description, date, deadline);
+        Task newTask = new Task(title, description, deadline);
+        newTask.setCompleted(isCompleted);
+        return newTask;
     }
+
+
 
     private LocalDate readDateFromUser(String message) {
         while (true) {

@@ -17,7 +17,7 @@ public class Event {
 
     // Constructor for timed event
     public Event(String title, String description, LocalDate date, LocalTime startTime) {
-        this.title = title;
+        this.title = title != null ? title : "No title";
         this.description = description;
         this.date = date;
         this.startTime = startTime;
@@ -80,4 +80,5 @@ public class Event {
     public boolean isAllDay() {
         return isAllDay;
     }
+
 }

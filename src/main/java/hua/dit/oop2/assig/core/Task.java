@@ -8,13 +8,16 @@ import gr.hua.dit.oop2.calendar.TimeTeller;
 public class Task extends Event {
     private LocalDateTime deadline;
     private boolean isCompleted;
+    private boolean isOverdue;
     private static final TimeTeller teller = TimeService.getTeller();
 
-    public Task(String title, String description, LocalDate date, LocalDateTime deadline) {
-        super(title, description, date, deadline.toLocalTime()); // Assuming the time part of deadline is the start time
+    // Updated constructor
+    public Task(String title, String description, LocalDateTime deadline) {
+        super(title, description, deadline.toLocalDate(), deadline.toLocalTime());
         this.deadline = deadline;
-        this.isCompleted = false;
+        this.isCompleted = false; // New tasks are incomplete by default
     }
+
 
     public LocalDateTime getDeadline() {
         return deadline;
@@ -32,7 +35,15 @@ public class Task extends Event {
         isCompleted = completed;
     }
 
-    public boolean isPastDue() {
-        return teller.now().isAfter(deadline) && !isCompleted;
+    // Method to set the task as overdue
+    public void setOverdue(boolean overdue) {
+        isOverdue = overdue;
     }
+
+    // Method to check if the task is overdue
+    public boolean isOverdue() {
+        return isOverdue;
+    }
+
 }
+
