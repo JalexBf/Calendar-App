@@ -1,0 +1,40 @@
+This is a command line Calendar app allowing users to view existing events from ical files and/or add new events in the specified file.
+
+
+Authors:
+
+	Jason Alex Karafotias
+	Eleftherios Liaskos
+	
+
+Requirements:
+
+	JDK 17.0.9
+	Apache Maven 3.6.3
+	
+
+Compilation instructions:
+
+	mvn clean package
+	
+Execution instructions:
+
+	java -jar /path/to/the/project/target/Calendar-1.0-SNAPSHOT.jar file.ics
+	
+	
+The execution can take 1-2 arguments. The second arguments must be an existing ical. If your ical file is in the same directory as the project you don't need to specify the absolute path. 
+
+The first argument can be one of the following:
+	
+	day		View all events for a day.
+	week 		View all events for a week.
+	month		View all events for a month.
+	pastday 	View all events for the past day.
+	pastweek	View all events for the past week.
+	pastmont	View all events for the past month.
+	todo		View all unfinished tasks for future dates.
+	due 		View all overdue tasks.
+	
+	
+
+
