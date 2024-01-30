@@ -1,0 +1,50 @@
+This is a CLA/GUI Calendar app allowing users to view, add and update events from ical files.
+
+
+Authors:
+
+	Jason Alex Karafotias
+	Eleftherios Liaskos
+	
+Git repo: https://github.com/JalexBf/Calendar-App
+
+
+Requirements:
+
+	JDK 17.0.9
+	Apache Maven 3.6.3
+	
+
+Compilation instructions:
+
+	mvn clean package
+	
+	
+Execution instructions for CLA:
+
+	java -jar /path/to/the/project/target/Calendar-1.0-SNAPSHOT.jar argument file.ics
+
+The execution requires 2 arguments. 
+
+The first argument can be one of the following:
+	-view
+	-add
+	-update
+	-update-task
+	
+The second argument must be an ical filename. You may use a new filename or use an existing one. If your existing ical file is in the same directory as the project you don't need to specify the absolute path. 
+
+
+Example usage: 
+	java -jar /path/to/the/project/target/Calendar-1.0-SNAPSHOT.jar view file.ics
+	
+	
+Execution instructions for GUI:
+	mvn compile
+	mvn exec:java -Dexec.mainClass="hua.dit.oop2.assig.GUI.MainApplicationWindow"
+
+
+	
+	
+
+
